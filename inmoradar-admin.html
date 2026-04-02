@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InmoRadar — Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{--gold:#c9a84c;--gold-light:#e8cc7a;--navy:#0f1f35;--navy-mid:#1a3a5c;--cream:#f7f3ed;--cream-dark:#ede7dc;--ink:#1a1a1a;--muted:#7a7060;--border:#ddd5c4;--white:#fff;--success:#2d7d5a;--error:#c0392b;--card:#fff;--bg:#f7f3ed;--hdr:rgba(15,31,53,.97);--inp:#f7f3ed;--sub:#7a7060}
+body.dark{--gold:#e8cc7a;--navy:#c9d5e3;--navy-mid:#8ba3c1;--cream:#0f172a;--cream-dark:#1a2332;--ink:#e2e8f0;--muted:#94a3b8;--border:#334155;--white:#1e293b;--card:#1e293b;--bg:#0f172a;--hdr:rgba(15,23,42,.97);--inp:#1a2332;--sub:#94a3b8}
+[x-cloak]{display:none!important}*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Jost',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+button{font-family:inherit;cursor:pointer}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* LOGIN */
+.login-screen{position:fixed;inset:0;z-index:9999;background:var(--navy);display:flex;align-items:center;justify-content:center;padding:20px;overflow:hidden}
+.login-screen::before{content:'';position:absolute;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.12),transparent 70%);top:-100px;right:-100px}
+.login-box{background:rgba(255,255,255,.04);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:40px 28px;width:100%;max-width:360px;text-align:center;position:relative;z-index:1}
+.login-box .brand{font-family:'Playfair Display',serif;font-size:32px;font-weight:600;color:#fff;letter-spacing:3px;margin-bottom:4px}
+.login-box .tagline{font-size:11px;color:rgba(255,255,255,.4);letter-spacing:3px;text-transform:uppercase;margin-bottom:28px}
+.login-box input{width:100%;padding:14px 16px;border:1.5px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.06);color:#fff;font-size:14px;font-family:inherit;outline:none;text-align:center;letter-spacing:2px}
+.login-box input:focus{border-color:rgba(201,168,76,.5);background:rgba(255,255,255,.08)}
+.login-box input::placeholder{color:rgba(255,255,255,.25);letter-spacing:1px}
+.login-box button{width:100%;margin-top:14px;padding:14px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--gold),#e8cc7a);color:#0f1f35;font-size:13px;font-weight:700;letter-spacing:2px;text-transform:uppercase}
+.login-box button:hover{opacity:.9}
+.login-err{margin-top:12px;padding:10px;background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.3);border-radius:8px;color:#fca5a5;font-size:12px;font-weight:600}
+
+/* HEADER */
+.app-header{background:var(--hdr);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:50}
+.header-inner{max-width:1280px;margin:0 auto;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.h-logo{font-family:'Playfair Display',serif;font-size:20px;font-weight:600;color:var(--gold);letter-spacing:2px;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.h-logo svg{flex-shrink:0}
+.h-badge{font-family:'Jost',sans-serif;font-size:8px;font-weight:700;color:var(--gold);background:rgba(201,168,76,.15);padding:3px 8px;border-radius:3px;letter-spacing:2px;text-transform:uppercase}
+.h-stats{display:flex;gap:20px;align-items:center}
+.h-stat{text-align:center}
+.h-stat-n{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--ink)}
+.h-stat-l{font-size:8px;color:var(--sub);letter-spacing:1.5px;text-transform:uppercase;margin-top:1px}
+.h-actions{display:flex;align-items:center;gap:8px}
+.h-btn{width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--ink)}
+.h-btn:hover{border-color:var(--gold)}
+
+/* TOOLBAR */
+.toolbar{background:var(--card);border-bottom:1px solid var(--border);padding:14px 20px}
+.toolbar-inner{max-width:1280px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.search-box{flex:1;min-width:200px;position:relative}
+.search-box input{width:100%;padding:10px 16px 10px 38px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:13px;color:var(--ink);background:var(--inp);outline:none}
+.search-box input:focus{border-color:var(--gold);background:var(--card)}
+.search-box input::placeholder{color:var(--sub)}
+.search-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:14px;color:var(--sub);pointer-events:none}
+.fsel{padding:9px 28px 9px 12px;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:12px;color:var(--ink);background:var(--card);outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' fill='%237a7060' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 9px center}
+.fsel:focus{border-color:var(--gold)}
+.btn-ref{padding:9px 16px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:700;letter-spacing:1px;display:flex;align-items:center;gap:5px}
+body.dark .btn-ref{background:#334155;color:#e2e8f0}
+.btn-ref:hover{opacity:.9}
+.btn-clear{padding:9px 12px;background:transparent;border:1.5px solid var(--border);border-radius:8px;font-size:11px;font-weight:600;color:var(--sub)}
+.btn-clear:hover{border-color:var(--error);color:var(--error)}
+.active-filters{display:flex;flex-wrap:wrap;gap:5px;padding:8px 20px 0}
+.af-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:14px;font-size:10px;font-weight:700;background:var(--card);border:1.5px solid var(--gold);color:var(--gold)}
+.af-tag .af-x{cursor:pointer;opacity:.6;font-size:9px}
+.af-tag .af-x:hover{opacity:1}
+
+/* MAIN */
+.main{max-width:1280px;margin:0 auto;padding:20px}
+
+/* CARDS */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.pc{background:var(--card);border:1.5px solid var(--border);border-radius:12px;overflow:hidden;transition:all .2s;cursor:pointer}
+.pc:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(0,0,0,.1);border-color:var(--gold)}
+.pc-img{height:180px;position:relative;overflow:hidden;background:linear-gradient(135deg,#0f1f35,#1a3a5c)}
+.pc-img img{width:100%;height:100%;object-fit:cover;display:block}
+.pc-noimg{width:100%;height:100%;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px}
+.pc-noimg span:first-child{font-size:36px}
+.pc-noimg span:last-child{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:2px;text-transform:uppercase}
+.pc-badges{position:absolute;top:10px;left:10px;display:flex;gap:5px}
+.badge{padding:4px 10px;border-radius:4px;font-size:9px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+.b-type{background:rgba(15,31,53,.85);color:#fff}
+.b-deal{background:rgba(201,168,76,.9);color:#0f1f35}
+.pc-photos{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;padding:3px 9px;border-radius:4px;font-size:10px;font-weight:600}
+.pc-age{position:absolute;top:10px;right:10px;padding:3px 8px;border-radius:4px;font-size:9px;font-weight:800}
+.age-new{background:rgba(45,125,90,.9);color:#fff}
+.age-ok{background:rgba(201,168,76,.9);color:#0f1f35}
+.age-old{background:rgba(192,57,43,.9);color:#fff}
+.pc-car-nav{position:absolute;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.45);color:#fff;border:none;font-size:14px;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;z-index:2}
+.pc:hover .pc-car-nav{opacity:1}
+.pc-car-nav.prev{left:6px}
+.pc-car-nav.next{right:6px}
+.pc-body{padding:14px 16px}
+.pc-price{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;color:var(--navy)}
+body.dark .pc-price{color:var(--gold)}
+.pc-price-sub{font-size:12px;font-weight:600;color:var(--success);margin-top:2px}
+.pc-addr{font-size:12px;color:var(--sub);margin-top:6px;line-height:1.4}
+.pc-feats{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.pc-feat{font-size:11px;padding:4px 9px;background:var(--inp);border:1px solid var(--border);border-radius:4px;font-weight:600;color:var(--ink)}
+.pc-footer{padding:10px 16px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.pc-agent{font-size:10px;color:var(--sub);font-weight:600}
+.pc-date{font-size:9px;color:var(--sub)}
+
+/* EMPTY & LOADING */
+.empty{text-align:center;padding:60px 20px}
+.empty-ico{font-size:48px;margin-bottom:12px;opacity:.5}
+.empty h3{font-family:'Playfair Display',serif;font-size:22px;font-weight:500;color:var(--navy);margin-bottom:6px}
+body.dark .empty h3{color:var(--gold)}
+.empty p{font-size:13px;color:var(--sub)}
+.loading{text-align:center;padding:60px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:24px;height:24px;border:3px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;z-index:200;background:rgba(15,31,53,.6);backdrop-filter:blur(5px);display:flex;align-items:flex-end;justify-content:center;padding:0}
+@media(min-width:641px){.modal-bg{align-items:center;padding:20px}}
+.modal-card{background:var(--card);border-radius:16px 16px 0 0;width:100%;max-width:580px;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 -8px 40px rgba(0,0,0,.3)}
+@media(min-width:641px){.modal-card{border-radius:14px;max-height:85vh}}
+.m-handle{width:40px;height:5px;background:var(--border);border-radius:3px;margin:10px auto 4px;flex-shrink:0}
+@media(min-width:641px){.m-handle{display:none}}
+.m-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;flex-shrink:0}
+.m-title{font-family:'Playfair Display',serif;font-size:16px;font-weight:600}
+.m-sub{font-size:11px;color:var(--sub);margin-top:2px}
+.m-close{min-width:36px;height:36px;border-radius:8px;border:1.5px solid var(--border);background:var(--card);font-size:16px;display:flex;align-items:center;justify-content:center;color:var(--sub);flex-shrink:0}
+.m-close:hover{background:rgba(192,57,43,.1);color:var(--error);border-color:rgba(192,57,43,.3)}
+.m-body{padding:16px;overflow-y:auto;flex:1;-webkit-overflow-scrolling:touch}
+
+/* GALLERY */
+.gal{position:relative;border-radius:10px;overflow:hidden;background:#000;margin-bottom:12px}
+.gal img{width:100%;height:260px;object-fit:contain;display:block}
+.gal-nav{position:absolute;top:50%;transform:translateY(-50%);width:36px;height:36px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;border:none;font-size:18px;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.gal-nav:hover{background:rgba(0,0,0,.7)}
+.gal-nav.prev{left:8px}.gal-nav.next{right:8px}
+.gal-ct{position:absolute;bottom:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:10px}
+.gal-thumbs{display:flex;gap:4px;overflow-x:auto;padding:8px 0;-webkit-overflow-scrolling:touch}
+.gal-thumbs img{width:52px;height:52px;object-fit:cover;border-radius:6px;border:2px solid transparent;cursor:pointer;flex-shrink:0;opacity:.5;transition:all .15s}
+.gal-thumbs img.act{border-color:var(--gold);opacity:1}
+.gal-thumbs img:hover{opacity:1}
+
+/* DETAIL SECTIONS */
+.dsec{margin-bottom:16px}
+.dsec-t{font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--sub);margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+.dgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ditem{background:var(--inp);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.ditem-l{font-size:8px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--sub);margin-bottom:3px}
+.ditem-v{font-size:14px;font-weight:600;color:var(--ink)}
+.ditem.hl{background:rgba(201,168,76,.08);border-color:rgba(201,168,76,.25)}
+.ditem.hl .ditem-v{font-family:'Playfair Display',serif;font-size:18px;font-weight:700;color:var(--navy)}
+body.dark .ditem.hl .ditem-v{color:var(--gold)}
+
+.chips-row{display:flex;flex-wrap:wrap;gap:5px}
+.chip-sm{padding:5px 11px;background:var(--inp);border:1px solid var(--border);border-radius:4px;font-size:11px;font-weight:600;color:var(--ink)}
+
+.contact-card{padding:14px;background:rgba(201,168,76,.06);border:1.5px solid rgba(201,168,76,.2);border-radius:10px}
+.contact-name{font-size:15px;font-weight:700;color:var(--ink)}
+.contact-info{font-size:12px;color:var(--sub);margin-top:4px;display:flex;flex-direction:column;gap:3px}
+.btn-wa{display:inline-flex;align-items:center;gap:6px;margin-top:10px;padding:10px 18px;background:#25d366;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;text-decoration:none}
+.btn-wa:hover{background:#1fb855}
+
+.btn-share{width:100%;margin-top:12px;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px}
+body.dark .btn-share{background:#334155}
+.btn-share:hover{opacity:.9}
+
+.obs-text{font-size:13px;color:var(--ink);line-height:1.7;white-space:pre-wrap}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:999;padding:10px 20px;border-radius:10px;font-size:12px;font-weight:700;box-shadow:0 8px 30px rgba(0,0,0,.25);animation:tIn .3s,tOut .3s 2.7s forwards;pointer-events:none;background:#065f46;color:#fff}
+@keyframes tIn{from{opacity:0;transform:translateX(-50%) translateY(20px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes tOut{to{opacity:0;transform:translateX(-50%) translateY(-10px)}}
+
+@media(max-width:640px){
+.h-stats{display:none}
+.cards-grid{grid-template-columns:1fr}
+.toolbar-inner{flex-direction:column}
+.search-box{width:100%}
+.dgrid{grid-template-columns:1fr}
+.gal img{height:220px}
+}
+@media(min-width:640px){
+body{background:#e2ddd5}body.dark{background:#0a0f1e}
+.main{padding:24px}
+}
+</style>
+</head>
+<body>
+<div x-data="panel()" x-init="init()" x-cloak>
+
+<!-- LOGIN -->
+<div class="login-screen" x-show="!authed && !isClient" x-cloak>
+  <div class="login-box">
+    <svg width="48" height="48" viewBox="0 0 56 56" fill="none" style="margin:0 auto 16px;display:block">
+      <circle cx="28" cy="24" r="22" stroke="rgba(201,168,76,.25)" stroke-width="1.5" fill="none"/>
+      <circle cx="28" cy="24" r="15" stroke="rgba(201,168,76,.4)" stroke-width="1.5" fill="none"/>
+      <circle cx="28" cy="24" r="8" stroke="rgba(201,168,76,.6)" stroke-width="1.5" fill="none"/>
+      <circle cx="28" cy="24" r="3" fill="#c9a84c"/>
+      <path d="M28 27 L28 50" stroke="#c9a84c" stroke-width="2" stroke-linecap="round"/>
+      <path d="M28 50 L24 44" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round"/>
+      <path d="M28 50 L32 44" stroke="#c9a84c" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <div class="brand">InmoRadar</div>
+    <div class="tagline">Panel de gestión</div>
+    <input type="password" x-model="pwd" placeholder="Contraseña" @keyup.enter="login()">
+    <button @click="login()">Ingresar</button>
+    <div class="login-err" x-show="loginErr" x-text="loginErr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<template x-if="authed || isClient">
+<div>
+  <!-- HEADER -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="h-logo">
+        <svg width="22" height="22" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="24" r="22" stroke="rgba(201,168,76,.3)" stroke-width="2" fill="none"/>
+          <circle cx="28" cy="24" r="14" stroke="rgba(201,168,76,.5)" stroke-width="2" fill="none"/>
+          <circle cx="28" cy="24" r="6" stroke="#c9a84c" stroke-width="2" fill="none"/>
+          <circle cx="28" cy="24" r="2.5" fill="#c9a84c"/>
+        </svg>
+        InmoRadar
+        <span class="h-badge" x-text="isClient ? 'Catálogo' : 'Admin'"></span>
+      </div>
+      <div class="h-stats">
+        <div class="h-stat"><div class="h-stat-n" x-text="fichas.length"></div><div class="h-stat-l">Fichas</div></div>
+        <div class="h-stat"><div class="h-stat-n" x-text="ciudadesCount"></div><div class="h-stat-l">Ciudades</div></div>
+        <div class="h-stat"><div class="h-stat-n" x-text="ventaCount"></div><div class="h-stat-l">Venta</div></div>
+        <div class="h-stat"><div class="h-stat-n" x-text="arriendoCount"></div><div class="h-stat-l">Arriendo</div></div>
+      </div>
+      <div class="h-actions">
+        <button class="h-btn" @click="toggleDark()" x-text="dark ? '🌙' : '☀️'"></button>
+        <button class="h-btn" @click="loadFichas()" title="Actualizar">&#8635;</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <div class="search-box">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" x-model="search" placeholder="Buscar dirección, ciudad, barrio, asesor..." @input.debounce.300ms="applyFilters()">
+      </div>
+      <select class="fsel" x-model="fTipo" @change="applyFilters()">
+        <option value="">Todos los tipos</option>
+        <template x-for="t in tiposUnicos"><option :value="t" x-text="t"></option></template>
+      </select>
+      <select class="fsel" x-model="fNeg" @change="applyFilters()">
+        <option value="">Toda negociación</option>
+        <option value="VENTA">Venta</option><option value="ARRIENDO">Arriendo</option><option value="AMBAS">Ambas</option>
+      </select>
+      <select class="fsel" x-model="fCiudad" @change="applyFilters()">
+        <option value="">Todas las ciudades</option>
+        <template x-for="c in ciudadesUnicas"><option :value="c" x-text="c"></option></template>
+      </select>
+      <select class="fsel" x-model="sortBy" @change="applyFilters()">
+        <option value="recent">Más recientes</option>
+        <option value="price_asc">Menor precio</option>
+        <option value="price_desc">Mayor precio</option>
+        <option value="area_desc">Mayor área</option>
+      </select>
+      <button class="btn-ref" @click="loadFichas()">&#8635; Actualizar</button>
+      <button class="btn-clear" @click="clearFilters()">&#10005; Limpiar</button>
+    </div>
+  </div>
+
+  <!-- ACTIVE FILTERS -->
+  <div class="active-filters" x-show="hasActiveFilters" style="max-width:1280px;margin:0 auto">
+    <template x-if="search"><span class="af-tag">&#128269; "<span x-text="search"></span>" <span class="af-x" @click="search='';applyFilters()">&#10005;</span></span></template>
+    <template x-if="fTipo"><span class="af-tag" x-text="fTipo"><span class="af-x" @click="fTipo='';applyFilters()">&#10005;</span></span></template>
+    <template x-if="fNeg"><span class="af-tag" x-text="fNeg"><span class="af-x" @click="fNeg='';applyFilters()">&#10005;</span></span></template>
+    <template x-if="fCiudad"><span class="af-tag" x-text="fCiudad"><span class="af-x" @click="fCiudad='';applyFilters()">&#10005;</span></span></template>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <!-- Loading -->
+    <div class="loading" x-show="loading"><div class="spinner"></div><div style="font-size:13px;color:var(--sub)">Cargando fichas...</div></div>
+
+    <!-- Empty -->
+    <div class="empty" x-show="!loading && filtered.length === 0">
+      <div class="empty-ico" x-text="fichas.length === 0 ? '&#128194;' : '&#128269;'"></div>
+      <h3 x-text="fichas.length === 0 ? 'Sin fichas aún' : 'Sin resultados'"></h3>
+      <p x-text="fichas.length === 0 ? 'Las fichas publicadas aparecerán aquí.' : 'Intenta con otros filtros.'"></p>
+    </div>
+
+    <!-- CARDS -->
+    <div class="cards-grid" x-show="!loading && filtered.length > 0">
+      <template x-for="(f, fi) in filtered" :key="f.id">
+        <div class="pc" @click="openDetail(f)">
+          <div class="pc-img">
+            <template x-if="f.fotos && f.fotos.length > 0">
+              <img :src="getCardPhoto(f, fi)" :alt="f.tipo" loading="lazy">
+            </template>
+            <template x-if="!f.fotos || f.fotos.length === 0">
+              <div class="pc-noimg"><span>&#127968;</span><span>Sin foto</span></div>
+            </template>
+            <div class="pc-badges">
+              <span class="badge b-type" x-text="f.tipo"></span>
+              <span class="badge b-deal" x-text="f.negociacion"></span>
+            </div>
+            <template x-if="f.fotos && f.fotos.length > 1">
+              <div>
+                <button class="pc-car-nav prev" @click.stop="cardNav(fi, -1)">&#8249;</button>
+                <button class="pc-car-nav next" @click.stop="cardNav(fi, 1)">&#8250;</button>
+              </div>
+            </template>
+            <div class="pc-photos" x-show="f.fotos && f.fotos.length > 1" x-text="(f.fotos||[]).length + ' fotos'"></div>
+            <div class="pc-age" :class="ageCls(f)" x-text="ageText(f)"></div>
+          </div>
+          <div class="pc-body">
+            <div class="pc-price" x-text="fmtPrice(f.precio_venta || f.precio_arriendo)"></div>
+            <div class="pc-price-sub" x-show="f.negociacion === 'AMBAS' && f.precio_arriendo" x-text="'Arriendo: ' + fmtPrice(f.precio_arriendo) + '/mes'"></div>
+            <div class="pc-addr" x-text="[f.direccion, f.barrio, f.ciudad].filter(Boolean).join(' · ')"></div>
+            <div class="pc-feats">
+              <span class="pc-feat" x-show="f.area" x-text="f.area + ' m²'"></span>
+              <span class="pc-feat" x-show="f.habitaciones > 0" x-text="f.habitaciones + ' hab'"></span>
+              <span class="pc-feat" x-show="f.banos > 0" x-text="f.banos + ' baños'"></span>
+              <span class="pc-feat" x-show="f.estrato > 0" x-text="'E' + f.estrato"></span>
+              <span class="pc-feat" x-show="f.parqueos > 0" x-text="f.parqueos + ' parq'"></span>
+            </div>
+          </div>
+          <div class="pc-footer" x-show="!isClient">
+            <div class="pc-agent" x-text="f.asesor || 'Sin asesor'"></div>
+            <div class="pc-date" x-text="fmtDate(f.created_at)"></div>
+          </div>
+        </div>
+      </template>
+    </div>
+  </div>
+
+  <!-- DETAIL MODAL -->
+  <div class="modal-bg" x-show="showModal" x-cloak @click.self="showModal=false"
+    x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
+    x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0">
+    <div class="modal-card" x-show="sel" @click.stop>
+      <div class="m-handle"></div>
+      <div class="m-head">
+        <div>
+          <div class="m-title" x-text="sel ? genTitle(sel) : ''"></div>
+          <div class="m-sub" x-text="sel ? (sel.direccion || '') + (sel.ciudad ? ' · ' + sel.ciudad : '') : ''"></div>
+        </div>
+        <button class="m-close" @click="showModal=false">&#10005;</button>
+      </div>
+      <div class="m-body">
+        <!-- Gallery -->
+        <template x-if="sel && sel.fotos && sel.fotos.length > 0">
+          <div>
+            <div class="gal">
+              <img :src="sel.fotos[galIdx]" :alt="sel.tipo">
+              <template x-if="sel.fotos.length > 1">
+                <div>
+                  <button class="gal-nav prev" @click="galIdx = (galIdx - 1 + sel.fotos.length) % sel.fotos.length">&#8249;</button>
+                  <button class="gal-nav next" @click="galIdx = (galIdx + 1) % sel.fotos.length">&#8250;</button>
+                </div>
+              </template>
+              <span class="gal-ct" x-text="(galIdx+1) + '/' + sel.fotos.length"></span>
+            </div>
+            <div class="gal-thumbs" x-show="sel.fotos.length > 1">
+              <template x-for="(foto, ti) in sel.fotos">
+                <img :src="foto" :class="{'act': galIdx === ti}" @click="galIdx = ti" loading="lazy">
+              </template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Badges -->
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <span class="badge b-type" style="font-size:11px;padding:5px 12px" x-text="sel?.tipo"></span>
+          <span class="badge b-deal" style="font-size:11px;padding:5px 12px" x-text="sel?.negociacion"></span>
+          <template x-if="sel?.negociable">
+            <span class="badge" style="font-size:11px;padding:5px 12px;background:rgba(45,125,90,.15);color:var(--success)">Negociable</span>
+          </template>
+        </div>
+
+        <!-- Price -->
+        <div class="dsec">
+          <div class="dsec-t">Precio</div>
+          <div class="dgrid">
+            <template x-if="sel?.precio_venta">
+              <div class="ditem hl"><div class="ditem-l">Venta</div><div class="ditem-v" x-text="fmtPrice(sel.precio_venta)"></div></div>
+            </template>
+            <template x-if="sel?.precio_arriendo">
+              <div class="ditem hl"><div class="ditem-l">Arriendo/mes</div><div class="ditem-v" x-text="fmtPrice(sel.precio_arriendo)"></div></div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Details -->
+        <div class="dsec">
+          <div class="dsec-t">Características</div>
+          <div class="dgrid">
+            <template x-if="sel?.area"><div class="ditem"><div class="ditem-l">Área</div><div class="ditem-v" x-text="sel.area + ' m²'"></div></div></template>
+            <template x-if="sel?.estrato > 0"><div class="ditem"><div class="ditem-l">Estrato</div><div class="ditem-v" x-text="sel.estrato"></div></div></template>
+            <template x-if="sel?.habitaciones > 0"><div class="ditem"><div class="ditem-l">Habitaciones</div><div class="ditem-v" x-text="sel.habitaciones"></div></div></template>
+            <template x-if="sel?.banos > 0"><div class="ditem"><div class="ditem-l">Baños</div><div class="ditem-v" x-text="sel.banos"></div></div></template>
+            <template x-if="sel?.parqueos > 0"><div class="ditem"><div class="ditem-l">Parqueaderos</div><div class="ditem-v" x-text="sel.parqueos"></div></div></template>
+            <template x-if="sel?.piso"><div class="ditem"><div class="ditem-l">Piso</div><div class="ditem-v" x-text="sel.piso"></div></div></template>
+          </div>
+        </div>
+
+        <!-- Location -->
+        <div class="dsec">
+          <div class="dsec-t">Ubicación</div>
+          <div style="font-size:13px;line-height:1.6">
+            <div x-text="sel?.direccion"></div>
+            <div style="color:var(--sub)" x-text="[sel?.barrio, sel?.ciudad].filter(Boolean).join(', ')"></div>
+          </div>
+        </div>
+
+        <!-- Characteristics -->
+        <template x-if="sel?.caracteristicas && sel.caracteristicas.length > 0">
+          <div class="dsec">
+            <div class="dsec-t">Características destacadas</div>
+            <div class="chips-row">
+              <template x-for="c in sel.caracteristicas"><span class="chip-sm" x-text="c.replace(/_/g, ' ')"></span></template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Amenities -->
+        <template x-if="sel?.amenidades && sel.amenidades.length > 0">
+          <div class="dsec">
+            <div class="dsec-t">Amenidades</div>
+            <div class="chips-row">
+              <template x-for="a in sel.amenidades"><span class="chip-sm" x-text="a.replace(/_/g, ' ')"></span></template>
+            </div>
+          </div>
+        </template>
+
+        <!-- Observations -->
+        <template x-if="sel?.observaciones">
+          <div class="dsec">
+            <div class="dsec-t">Observaciones</div>
+            <div class="obs-text" x-text="sel.observaciones"></div>
+          </div>
+        </template>
+
+        <!-- Owner (admin only) -->
+        <template x-if="!isClient && sel?.nombre">
+          <div class="dsec">
+            <div class="dsec-t">Propietario</div>
+            <div class="contact-card">
+              <div class="contact-name" x-text="sel.nombre"></div>
+              <div class="contact-info">
+                <span x-text="sel.telefono"></span>
+                <span x-show="sel.email" x-text="sel.email"></span>
+              </div>
+              <a class="btn-wa" :href="'https://wa.me/57' + (sel.telefono||'').replace(/\\D/g,'')" target="_blank">&#128172; WhatsApp</a>
+            </div>
+          </div>
+        </template>
+
+        <!-- Agent -->
+        <template x-if="!isClient && sel?.asesor">
+          <div style="font-size:11px;color:var(--sub);padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between">
+            <span x-text="'Registrado por: ' + sel.asesor"></span>
+            <span x-text="fmtDate(sel.created_at)"></span>
+          </div>
+        </template>
+
+        <!-- Share -->
+        <button class="btn-share" @click="shareWA(sel)">&#128228; Compartir por WhatsApp</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toasts" style="position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:999"></div>
+</div>
+</template>
+</div>
+
+<script>
+const CONFIG = {
+  SUPABASE_URL: 'https://ribxtnhbujaluhmwlawt.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_dTQorfs8Hif_w5yPXqlBqA_kgSgxcQY',
+  ADMIN_PASSWORD: 'inmoradar2026',
+  CONTACT_WA: '573000000000',
+};
+
+let db;
+
+function panel() {
+  return {
+    authed: false,
+    isClient: new URLSearchParams(location.search).has('modo') && new URLSearchParams(location.search).get('modo') === 'cliente',
+    pwd: '',
+    loginErr: '',
+    dark: false,
+    fichas: [],
+    filtered: [],
+    loading: true,
+    search: '',
+    fTipo: '',
+    fNeg: '',
+    fCiudad: '',
+    sortBy: 'recent',
+    showModal: false,
+    sel: null,
+    galIdx: 0,
+    cardPhotos: {},
+
+    get tiposUnicos() { return [...new Set(this.fichas.map(f => f.tipo).filter(Boolean))].sort(); },
+    get ciudadesUnicas() { return [...new Set(this.fichas.map(f => f.ciudad).filter(Boolean))].sort(); },
+    get ciudadesCount() { return this.ciudadesUnicas.length; },
+    get ventaCount() { return this.fichas.filter(f => f.negociacion === 'VENTA' || f.negociacion === 'AMBAS').length; },
+    get arriendoCount() { return this.fichas.filter(f => f.negociacion === 'ARRIENDO' || f.negociacion === 'AMBAS').length; },
+    get hasActiveFilters() { return this.search || this.fTipo || this.fNeg || this.fCiudad; },
+
+    async init() {
+      db = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+      if (this.isClient) { this.authed = false; await this.loadFichas(); return; }
+      if (sessionStorage.getItem('ir_auth') === '1') { this.authed = true; }
+      if (localStorage.getItem('ir_dark') === '1') { this.dark = true; document.body.classList.add('dark'); }
+      if (this.authed) await this.loadFichas();
+    },
+
+    login() {
+      if (this.pwd === CONFIG.ADMIN_PASSWORD) {
+        this.authed = true;
+        this.loginErr = '';
+        sessionStorage.setItem('ir_auth', '1');
+        this.loadFichas();
+      } else {
+        this.loginErr = 'Contraseña incorrecta';
+      }
+    },
+
+    toggleDark() {
+      this.dark = !this.dark;
+      document.body.classList.toggle('dark', this.dark);
+      localStorage.setItem('ir_dark', this.dark ? '1' : '0');
+    },
+
+    async loadFichas() {
+      this.loading = true;
+      try {
+        const { data, error } = await db.from('fichas').select('*').order('created_at', { ascending: false });
+        if (error) throw error;
+        this.fichas = data || [];
+        this.applyFilters();
+      } catch (e) { console.error(e); }
+      finally { this.loading = false; }
+    },
+
+    applyFilters() {
+      let r = [...this.fichas];
+      if (this.search) {
+        const q = this.search.toLowerCase();
+        r = r.filter(f => [f.direccion,f.ciudad,f.barrio,f.asesor,f.nombre,f.tipo].some(v => (v||'').toLowerCase().includes(q)));
+      }
+      if (this.fTipo) r = r.filter(f => f.tipo === this.fTipo);
+      if (this.fNeg) r = r.filter(f => f.negociacion === this.fNeg);
+      if (this.fCiudad) r = r.filter(f => f.ciudad === this.fCiudad);
+      switch (this.sortBy) {
+        case 'price_asc': r.sort((a,b) => (a.precio_venta||a.precio_arriendo||0) - (b.precio_venta||b.precio_arriendo||0)); break;
+        case 'price_desc': r.sort((a,b) => (b.precio_venta||b.precio_arriendo||0) - (a.precio_venta||a.precio_arriendo||0)); break;
+        case 'area_desc': r.sort((a,b) => (b.area||0) - (a.area||0)); break;
+        default: r.sort((a,b) => new Date(b.created_at) - new Date(a.created_at));
+      }
+      this.filtered = r;
+    },
+
+    clearFilters() {
+      this.search = ''; this.fTipo = ''; this.fNeg = ''; this.fCiudad = ''; this.sortBy = 'recent';
+      this.applyFilters();
+    },
+
+    openDetail(f) {
+      this.sel = f;
+      this.galIdx = 0;
+      this.showModal = true;
+    },
+
+    // Card carousel
+    getCardPhoto(f, fi) {
+      const idx = this.cardPhotos[fi] || 0;
+      return f.fotos[idx] || f.fotos[0];
+    },
+    cardNav(fi, dir) {
+      const f = this.filtered[fi];
+      if (!f || !f.fotos || f.fotos.length < 2) return;
+      const cur = this.cardPhotos[fi] || 0;
+      this.cardPhotos[fi] = (cur + dir + f.fotos.length) % f.fotos.length;
+    },
+
+    genTitle(f) {
+      if (!f) return '';
+      return [f.tipo, f.ciudad, f.area ? f.area+'m²' : ''].filter(Boolean).join(' en ') || 'Sin título';
+    },
+    fmtPrice(v) { return v ? '$ ' + Number(v).toLocaleString('es-CO') : ''; },
+    fmtDate(d) { return d ? new Date(d).toLocaleDateString('es-CO', { day:'numeric', month:'short', year:'numeric' }) : ''; },
+
+    ageCls(f) {
+      const d = this.daysSince(f.created_at);
+      if (d <= 7) return 'age-new';
+      if (d <= 30) return 'age-ok';
+      return 'age-old';
+    },
+    ageText(f) {
+      const d = this.daysSince(f.created_at);
+      if (d === 0) return 'Hoy';
+      return d + 'd';
+    },
+    daysSince(d) { return d ? Math.floor((Date.now() - new Date(d).getTime()) / 864e5) : 999; },
+
+    shareWA(f) {
+      if (!f) return;
+      let msg = '🏠 *InmoRadar*\n\n';
+      msg += '*' + (f.tipo||'Inmueble') + '*\n';
+      msg += '📍 ' + [f.direccion, f.ciudad].filter(Boolean).join(', ') + '\n';
+      if (f.precio_venta) msg += '💰 Venta: ' + this.fmtPrice(f.precio_venta) + '\n';
+      if (f.precio_arriendo) msg += '🔑 Arriendo: ' + this.fmtPrice(f.precio_arriendo) + '/mes\n';
+      const specs = [];
+      if (f.habitaciones) specs.push(f.habitaciones + ' hab');
+      if (f.banos) specs.push(f.banos + ' baños');
+      if (f.area) specs.push(f.area + ' m²');
+      if (specs.length) msg += specs.join(' · ') + '\n';
+      msg += '\n📲 InmoRadar';
+      window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank');
+      this.toast('Abriendo WhatsApp...');
+    },
+
+    toast(msg) {
+      const el = document.getElementById('toasts');
+      const t = document.createElement('div');
+      t.className = 'toast';
+      t.textContent = msg;
+      el.appendChild(t);
+      setTimeout(() => t.remove(), 3200);
+    },
+  };
+}
+</script>
+</body>
+</html>
